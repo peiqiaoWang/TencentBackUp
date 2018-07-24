@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CLASSMATE-BOOK</title>
+
+    <link href="css/styles.css" rel="stylesheet">
+    <script src="js/jquery-3.1.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
+    <script src="js/bootstrap-table.js"></script>
+    <script src="js/bootstrap-table-export.js"></script>
+    <script src="js/tableExport.js"></script>
+
+</head>
+
+<body>
+<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container-fluid">
+        <div class="navbar-header" id="header_top">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#sidebar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#"><span>CLASSMATE </span>BOOK</a>
+            <ul class="user-menu">
+            </ul>
+        </div>
+
+    </div><!-- /.container-fluid -->
+</nav>
+
+<script>
+</script>
+<script>
+    $.ajax({
+        type: "get",
+        async: false,
+        url: "http://111.230.148.202:5000",
+        dataType: "jsonp",
+        jsonp: "callback",//传递给请求处理程序或页面的，用以获得jsonp回调函数名的参数名(一般默认为:callback)
+        jsonpCallback:"flightHandler",//自定义的jsonp回调函数名称，默认为jQuery自动生成的随机函数名，也可以写"?"，jQuery会自动为你处理数据
+        success: function(json){
+            console.log(json);
+            classmateData = json;
+            refresh();
+
+        },
+        error: function(){
+             alert('fail');
+        }
+    });
+</script>
+
+<script>
+    function DoOnMsoNumberFormat(cell, row, col) {
+        var result = "";
+        if (row > 0 && col == 0)
+            result = "\\@";
+        return result;
+    }
+
+    function refresh() {
+        for (var i = 0; i < 1; ++i) {
+            // main div
+            var divMain = document.createElement('div');
+            divMain.className = 'main';
+            $('body').append(divMain);
+            // 行
+            var divRow = document.createElement('div');
+            divRow.className = 'row';
+            $(divMain).append(divRow);
+            // 列
+            var divCol = document.createElement('div');
+            divCol.className = 'col-lg-12';
+            $(divRow).append(divCol);
+            // 面板
+            var divPanel = document.createElement('div');
+            divPanel.className = 'panel panel-default';
+            $(divCol).append(divPanel);
+            // 头
+            var divPanelHeading = document.createElement('div');
+            divPanelHeading.className = 'panel-heading';
+//            divPanelHeading.innerHTML = temp['table'][i]["table-name"];
+            $(divPanel).append(divPanelHeading);
+            // 体
+            var divPanelBody = document.createElement('div');
+            divPanelBody.className = 'panel-body';
+            $(divPanel).append(divPanelBody);
+            // 表
+            var table = document.createElement('table');
+            table.id = 'classmate-table';
+            $(divPanelBody).append(table);
+            $(table).bootstrapTable({
+                showExport: true,  //是否显示导出按钮
+                buttonsAlign:"right",  //按钮位置
+                exportTypes:['excel'],  //导出文件类型
+                Icons:'glyphicon-export',
+                exportOptions:{
+
+                    fileName: '同学录',  //文件名称设置
+                    worksheetName: 'sheet1',  //表格工作区名称
+                    tableName: '同学录',
+                    excelstyles: ['background-color', 'color', 'font-size', 'font-weight'],
+                    onMsoNumberFormat: DoOnMsoNumberFormat
+                },
+                pagination: true,
+                columns: classmateData['columns'],
+                data: classmateData['data']
+            });
+
+            var str_add_btn = "<div id='toolbar' class='btn-group' style='float:right'><button type='button' class='btn btn-default' data-toggle='modal' data-target='#myModal" + i + "'>新增同学</button>";
+            str_add_btn += "<button type='button' class='btn btn-default' onclick='export_excel()'>导出excel</button>";
+            str_add_btn  += "<form id='student'><div class='modal fade' id='myModal" + i + "' tabindex='-1' role='dialog' aria-labelledby='myModalLabel'><div class='modal-dialog' role='document'><div class='modal-content'><div class='modal-header'><button type='button' class='close' data-dismiss='modal' aria-label='Close'><span aria-hidden='true'>&times;</span></button><h4 class='modal-title' id='myModalLabel'>" + "新增同学" + "</h4></div><div class='modal-body'>";
+            for (var l = 0; l < classmateData['columns'].length; l++) {
+                str_add_btn += "<div class='input-group'><span style='width: 152px;' class='input-group-addon'>" + classmateData['columns'][l]['field'] + "</span><input type='text' class='form-control' name='" + classmateData['columns'][l]['field'] + "'></div>";
+            }
+//            str_add_btn += "<div class='input-group'><span style='width: 152px;' class='input-group-addon'>action</span><select class= 'form-control selectpicker' name='action' multiple>";
+//            for (var l =0; l<temp['table'][i]['action-number']; l++) {
+//                str_add_btn += "<option value='" + temp['table'][i]['action'][l] + "'>" + temp['table'][i]['action'][l] + "</option >"
+//            }
+            str_add_btn += "</select></div><div class='modal-footer'><button type='button' class='btn btn-default' data-dismiss='modal'>关闭</button><button  class='btn btn-primary' onclick=\"getdata('" + i + "')\">确定</button></div></div></div></div></form></div>";
+            $(divPanelBody).append(str_add_btn);
+
+        }
+    }
+
+
+    //下发entry， match-key,action,action-parameter,table-name,switch-name
+    function getdata(num) {
+        var entry_data = {};
+        var formid = "#form_" + num;
+        var t = $(formid).serializeArray();
+        $.each(t, function() {
+            entry_data[this.name] = this.value;
+        });
+        entry_data['table-name'] = temp['table'][num]['table-name'];
+        entry_data['switch-name'] = sessionStorage.switch_no;
+        $.ajax({ url: "/add_entry", context: document.body,
+            data: entry_data,
+            success: function(data){
+                alert(data);
+                window.location.href = sessionStorage.now_url;
+            }});
+    }
+
+    //删除响应时间，handle,table-name,switch-name
+    function deldata(table_index, index) {
+        table_index = parseInt(table_index);
+        index = parseInt(index);
+        var del_index_data = {}
+        del_index_data['handle'] = temp['table'][table_index]['table-entry'][index]['handle'];
+        del_index_data['table-name'] = temp['table'][table_index]['table-name'];
+        del_index_data['switch-name'] = sessionStorage.switch_no;
+        $.ajax({ url: "/del_entry", context: document.body,
+            data: del_index_data,
+            success: function(data){
+                alert(data);
+                window.location.href = sessionStorage.now_url;
+            }});
+    }
+</script>
+</body>
+<link href="css/bootstrap.min.css" rel="stylesheet">
+<link href="css/bootstrap-table.css" rel="stylesheet">
+</html>
